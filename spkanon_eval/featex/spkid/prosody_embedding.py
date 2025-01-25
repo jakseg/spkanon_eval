@@ -73,6 +73,8 @@ class ProsodyEmbedding:
                 'energy' : self.aggregate_energy
             }
 
+            
+
         @staticmethod
         def log_function(value):
             return np.log(value)
@@ -80,14 +82,42 @@ class ProsodyEmbedding:
         @staticmethod
         def delta_log(value):
             return np.diff(ProsodyEmbedding.Aggregation.log_function(value))
+        
+        @staticmethod
+        def amplitude_tilt(f0_contour):
+            # Nullwerte entfernen
+            f0_contour = f0_contour[f0_contour != 0]
+
+            if len(f0_contour) == 0:
+                return 0
+            
+
+            # Finde F0 Peak Index
+            f0_peak_location = np.argmax(f0_contour)
+
+            rise = f0_contour[f0_peak_location] - np.min(f0_contour[:f0_peak_location])
+            fall = f0_contour[f0_peak_location] - np.min(f0_contour[f0_peak_location:])
+
+            if (abs(rise) + abs(fall)) == 0:
+                return 0
+
+            #Amplituden Tilt berechnen
+            tilt= (abs(rise) - abs(fall)) / (abs(rise) + abs(fall))
+            # Auf 4 Nachkommastellen runden
+            return round(tilt, 4)  
+
 
         def aggregate_f0(self, values):
             valid_values = values[values> 0]
+            tilt = ProsodyEmbedding.Aggregation.amplitude_tilt(values)
+
 
             return [
-                np.mean(valid_values),
-                np.max(valid_values),
-                np.max(valid_values) - np.min(valid_values)
+                round(np.mean(valid_values), 4),
+                round(np.max(valid_values), 4),
+                round(np.max(valid_values) - np.min(valid_values), 4),
+                tilt
+                
             ]
 
 
@@ -104,7 +134,7 @@ class ProsodyEmbedding:
                 if feature_name in self.aggregation_function:
                     aggr_value = self.aggregation_function[feature_name](value)
                     aggregated_features.extend(aggr_value)
-            #print(aggregated_features)
+            
             return np.array(aggregated_features)
 
 
@@ -112,11 +142,11 @@ class ProsodyEmbedding:
 
     def create_embedding(self, audio, feature_segments={'f0':'all', 'energy':'last'}):
         segments = self.segment_audio(audio)
-        #print("Segments shape:", [len(seg) for seg in segments])
+
         all_features = []
         aggregator = self.Aggregation()
 
-        #print("Segments shape:", [len(seg) for seg in segments])
+
 
         for i, segment in enumerate (segments):
             print(f"Segment {i} length:", len(segment))
@@ -143,8 +173,8 @@ class ProsodyEmbedding:
 
 
 if  __name__ == "__main__":
-    path = "/path" 
-    
+    path = "../../../../Daten/3853-163249-0004.wav" 
+
     sound = parselmouth.Sound(path)
     
     config = {
@@ -163,7 +193,7 @@ if  __name__ == "__main__":
     prosody_embedding = ProsodyEmbedding(config)
 
     # Embedding erstellen
-    embedding = prosody_embedding.create_embedding(audio, feature_segments={'f0': 'all', 'energy': 'all'})
+    embedding = prosody_embedding.create_embedding(audio, feature_segments={'f0': 'all', 'energy': ''})
 
     # Embedding ausgeben
     print(embedding)
