@@ -13,7 +13,7 @@ class ProsodyEmbedding:
         self.pitch_ceiling = config["pitch_ceiling"]
         self.window_length = config["window_length"]
         self.time_step = config["time_step"]
-        self.intensity_value = config["intensity_value"]
+        self.minimum_intensity = config["minimum_intensity"]
         self.config = config
 
     def segment_audio(self, audio):
@@ -39,15 +39,49 @@ class ProsodyEmbedding:
 
     
     def extract_f0(self, segment):
+        #F0 extraction based on default values or dynamic pitch floor and ceiling
+        #for testing
+        method = "default_values"
+        if method == "dynamic_values":
+            pitch_floor, pitch_ceiling = self.get_boundaries( segment)
+        else: 
+            pitch_floor = self.pitch_floor
+            pitch_ceiling = self.pitch_ceiling
+
+        print("dynamic values")
+        print(pitch_floor, pitch_ceiling)
+
         sound = parselmouth.Sound(segment)
-        pitch = sound.to_pitch(pitch_floor=self.pitch_floor, pitch_ceiling=self.pitch_ceiling, time_step=self.time_step)
+        pitch = sound.to_pitch(pitch_floor=pitch_floor, pitch_ceiling=pitch_ceiling, time_step=self.time_step)
         pitch_values = pitch.selected_array['frequency']
+
         return pitch_values
+
+    #based on Speech Prosody: From Acoustics to Interpretation
+    def get_boundaries(self, segment):
+        sound = parselmouth.Sound(segment)
+        #values need to be adjusted
+        pitch = sound.to_pitch(pitch_floor=50, pitch_ceiling=300)
+        values = pitch.selected_array['frequency']
+        valid_values = values[values > 0]
+
+        print("Valid F0 values range:", np.min(valid_values), "-", np.max(valid_values))
+    
+
+        q1 = np.percentile(valid_values, 25) 
+        print("Q1:", q1)
+
+        pitch_floor = 0.75 * q1
+        max_interval = 1.5
+        pitch_ceiling = pitch_floor * (2 ** max_interval)
+        print(pitch_floor, pitch_ceiling)
+
+        return pitch_floor, pitch_ceiling
 
 
     def extract_energy(self, segment):
         sound = parselmouth.Sound(segment)
-        intensity = sound.to_intensity(minimum_pitch=50, time_step=0.01)
+        intensity = sound.to_intensity(minimum_intensity=self.minimum_intensity, time_step=self.time_step)
         intensity_values = intensity.values[0]
         return intensity_values
 
@@ -173,17 +207,19 @@ class ProsodyEmbedding:
 
 
 if  __name__ == "__main__":
-    path = "../../../../Daten/3853-163249-0004.wav" 
+    path = "../Daten/3853-163249-0004.wav" 
+
 
     sound = parselmouth.Sound(path)
     
     config = {
         'pitch_floor': 75,
         'pitch_ceiling': 500,
-        'window_length': 0.03,
-        'time_step': 0.01,
-        'intensity_value': 50
+        'window_length': 0.03, # [0.03, 0.05]
+        'time_step': 0.01, # [0.01, 0.0125]
+        'minimum_intensity': 50
     }
+
 
 
     sound = parselmouth.Sound(path)
