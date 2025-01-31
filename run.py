@@ -16,11 +16,11 @@ def setup(args):
     config = OmegaConf.create(config)
     config.device = args.device
     config.data.config.num_workers = args.num_workers
-    config.commit_hash = (
-        subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
-        .decode("ascii")
-        .strip()
-    )
+    # config.commit_hash = (
+    #     subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+    #     .decode("ascii")
+    #     .strip()
+    # )
 
     # create the logging directory
     exp_folder = os.path.join(config.log_dir, str(int(time())))

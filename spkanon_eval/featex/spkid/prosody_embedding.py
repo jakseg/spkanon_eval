@@ -1,25 +1,95 @@
 import parselmouth
 import numpy as np
+import os
+import logging
+import json
+import csv
+import random
+import shutil
+
+from speechbrain.inference.speaker import EncoderClassifier
+from hyperpyyaml import load_hyperpyyaml
+from omegaconf import OmegaConf
+import torch
+
+#from spkanon_eval.featex.spkid.train import SpeakerBrain, prepare_dataset
+from spkanon_eval.component_definitions import InferComponent
+
+LOGGER = logging.getLogger("progress")
 
 
+class ProsodyEmbedding(InferComponent):
 
-class ProsodyEmbedding:
-    def __init__(self, config):
+    def __init__(self, config: OmegaConf, device: str) -> None:
         """
         diverse Parameter:
         sample_rate
         """
-        self.pitch_floor = config["pitch_floor"]
-        self.pitch_ceiling = config["pitch_ceiling"]
-        self.window_length = config["window_length"]
-        self.time_step = config["time_step"]
-        self.minimum_intensity = config["minimum_intensity"]
+        self.device = device
         self.config = config
+        self.pitch_floor = config.pitch_floor
+        self.pitch_ceiling = config.pitch_ceiling
+        self.window_length = config.window_length
+        self.time_step = config.time_step
+        self.minimum_intensity = config.minimum_intensity
+        #self.feature_segments = config.get("feature_segments", {'f0':'first', 'energy':''})
+        self.sampling_frequency = config.sampling_frequency
+        #default_segments = {'f0': 'all', 'energy': 'all'}
+        self.feature_segments = config.get("feature_segments")
+
+    #Sagt aus, ob das Modell auf der CPU oder GPU läuft
+    def to(self, device: str) -> None:
+        self.device = device
+        #self.model.to(device)
+
+    
+    @torch.inference_mode()
+    def run(self, batch: list[torch.Tensor]) -> torch.Tensor:
+        """
+        Return speaker embeddings for the given batch of utterances.
+
+        Args:
+            batch: A list of three tensors in the following order:
+            1. waveforms with shape (batch_size, n_samples)
+            2. waveform lengths with shape (batch_size), as integers
+            3. waveform speaker IDs with shape (batch_size), as integers
+
+        Returns:
+            A tensor containing the prosody embeddings with shape
+            (batch_size, embedding_dim).
+        """
+
+        # Tensor printen
+        # for i, tensor in enumerate(batch):
+        #     print(f"Tensor {i} shape:", tensor.shape)
+        #     print(f"Tensor {i} Inhalt:", tensor)
+        #     print(f"Tensor {i} Datentyp:", tensor.dtype)
+
+        waveforms = batch[0].cpu().numpy()
+        
+        embeddings = []
+
+        #print("\nNach Konvertierung zu NumPy:")
+        #print("Waveforms shape:", waveforms.shape)
+        #print("Erste Waveform (ersten 10 Werte):", waveforms[0][:10])
+        for waveform in waveforms:
+
+            sound = parselmouth.Sound(values=waveform, sampling_frequency=self.sampling_frequency)
+            
+            embedding = self.create_embedding(sound)
+            embeddings.append(embedding)
+
+            
+        embeddings_tensor = torch.tensor(embeddings, dtype=torch.float32).to(batch[0].device)
+        print(f"output shape: {embeddings_tensor.shape}")
+        print(f"output: {embeddings_tensor}")
+        return embeddings_tensor
 
     def segment_audio(self, audio):
         #Global Relative Time Intervals Approach
         # Gesamtlänge berechnen
-        total_length = len(audio)
+        audio_data = audio.values[0]
+        total_length = len(audio_data)
         segments = []
 
         # In 3 gleiche Segmente aufteilen
@@ -28,11 +98,13 @@ class ProsodyEmbedding:
         for i in range(3):
             start = i * segment_length
             end = start + segment_length
-            segment = audio[start:end]
-            segments.append(segment)
+            segment_data = audio_data[start:end]
+            segment_sound = parselmouth.Sound(segment_data, sampling_frequency=self.sampling_frequency)
+            segments.append(segment_sound)
+            #segments.append(segment)
 
         #Gesamte utterance als letztes Segment hinzufügen
-        segments.append(audio[:])
+        segments.append(audio)
 
         return segments
 
@@ -48,10 +120,9 @@ class ProsodyEmbedding:
             pitch_floor = self.pitch_floor
             pitch_ceiling = self.pitch_ceiling
 
-        print("dynamic values")
-        print(pitch_floor, pitch_ceiling)
+        LOGGER.debug(f"Using pitch boundaries: {pitch_floor}-{pitch_ceiling}")
 
-        sound = parselmouth.Sound(segment)
+        sound = parselmouth.Sound(segment, sampling_frequency=self.sampling_frequency)
         pitch = sound.to_pitch(pitch_floor=pitch_floor, pitch_ceiling=pitch_ceiling, time_step=self.time_step)
         pitch_values = pitch.selected_array['frequency']
 
@@ -65,7 +136,7 @@ class ProsodyEmbedding:
         values = pitch.selected_array['frequency']
         valid_values = values[values > 0]
 
-        print("Valid F0 values range:", np.min(valid_values), "-", np.max(valid_values))
+        #print("Valid F0 values range:", np.min(valid_values), "-", np.max(valid_values))
     
 
         q1 = np.percentile(valid_values, 25) 
@@ -81,8 +152,10 @@ class ProsodyEmbedding:
 
     def extract_energy(self, segment):
         sound = parselmouth.Sound(segment)
-        intensity = sound.to_intensity(minimum_intensity=self.minimum_intensity, time_step=self.time_step)
+        intensity = sound.to_intensity(time_step=self.time_step, subtract_mean=False) #minimum_pitch=100.0,
         intensity_values = intensity.values[0]
+        #linear_energy = 10 ** (intensity_values / 10)
+        #return intensity_values
         return intensity_values
 
 
@@ -96,7 +169,6 @@ class ProsodyEmbedding:
             'energy' : energy,
            # 'duration' : duration
         }
-        #print("Features dictionary:", features)
         return features
 
 
@@ -107,7 +179,6 @@ class ProsodyEmbedding:
                 'energy' : self.aggregate_energy
             }
 
-            
 
         @staticmethod
         def log_function(value):
@@ -129,7 +200,12 @@ class ProsodyEmbedding:
             # Finde F0 Peak Index
             f0_peak_location = np.argmax(f0_contour)
 
-            rise = f0_contour[f0_peak_location] - np.min(f0_contour[:f0_peak_location])
+            if f0_peak_location > 0:
+                rise_segment = f0_contour[:f0_peak_location]
+                rise = f0_contour[f0_peak_location] - np.min(rise_segment) if len(rise_segment) > 0 else 0
+            else:
+                rise = 0
+            
             fall = f0_contour[f0_peak_location] - np.min(f0_contour[f0_peak_location:])
 
             if (abs(rise) + abs(fall)) == 0:
@@ -142,27 +218,40 @@ class ProsodyEmbedding:
 
 
         def aggregate_f0(self, values):
+            values = np.array(values)
             valid_values = values[values> 0]
+            if len (valid_values) == 0:
+                return [0, 0, 0, 0]
             tilt = ProsodyEmbedding.Aggregation.amplitude_tilt(values)
+    
+            try:
+                return [
+                    round(np.mean(valid_values), 4),
+                    round(np.max(valid_values), 4),
+                    round(np.max(valid_values) - np.min(valid_values), 4),
+                    tilt
+                    
+                ]
+            except Exception as e:
 
-
-            return [
-                round(np.mean(valid_values), 4),
-                round(np.max(valid_values), 4),
-                round(np.max(valid_values) - np.min(valid_values), 4),
-                tilt
-                
-            ]
+                return [0, 0, 0, 0]  # Fallback bei Fehler
 
 
         def aggregate_energy(self, values):
             valid_values = values[values> -60]
+            dealta_log_values = ProsodyEmbedding.Aggregation.delta_log(valid_values)
 
-            return [np.mean(self.log_function(valid_values))]
+            return [np.mean(self.log_function(valid_values)),
+                    np.max(valid_values),
+                    np.min(valid_values),
+                    np.std(valid_values),
+                    np.mean(valid_values),
+                    ]
 
 
         def aggregation(self, features):
             aggregated_features = []
+
 
             for feature_name, value in features.items():
                 if feature_name in self.aggregation_function:
@@ -174,7 +263,15 @@ class ProsodyEmbedding:
 
 
 
-    def create_embedding(self, audio, feature_segments={'f0':'all', 'energy':'last'}):
+    def create_embedding(self, audio):
+        if self.feature_segments is None:
+            feature_segments = self.feature_segments
+
+        features = {
+            'f0': self.extract_f0(audio),
+            'energy': self.extract_energy(audio)
+    }
+
         segments = self.segment_audio(audio)
 
         all_features = []
@@ -183,10 +280,9 @@ class ProsodyEmbedding:
 
 
         for i, segment in enumerate (segments):
-            print(f"Segment {i} length:", len(segment))
             features = {}
 
-            for feature_name, segments_to_extract in feature_segments.items():
+            for feature_name, segments_to_extract in self.feature_segments.items():
                 if segments_to_extract == 'all':
                     features[feature_name] = getattr(self, f'extract_{feature_name}')(segment)
                 elif segments_to_extract == 'first' and i < len(segments) -1:
@@ -202,37 +298,9 @@ class ProsodyEmbedding:
             
         # Features aller Segmente kombinieren
         final_embedding = np.concatenate(all_features).flatten()
+
+        # Ersetze nan-Werte mit 0 oder einem anderen sinnvollen Wert
+        final_embedding = np.nan_to_num(final_embedding, nan=0.0)
+
         return final_embedding
-
-
-
-if  __name__ == "__main__":
-    path = "../Daten/3853-163249-0004.wav" 
-
-
-    sound = parselmouth.Sound(path)
-    
-    config = {
-        'pitch_floor': 75,
-        'pitch_ceiling': 500,
-        'window_length': 0.03, # [0.03, 0.05]
-        'time_step': 0.01, # [0.01, 0.0125]
-        'minimum_intensity': 50
-    }
-
-
-
-    sound = parselmouth.Sound(path)
-    audio = sound.values[0] # Audiodaten als Array extrahieren
-
-    # Prosody Embedding Objekt erstellen
-    prosody_embedding = ProsodyEmbedding(config)
-
-    # Embedding erstellen
-    embedding = prosody_embedding.create_embedding(audio, feature_segments={'f0': 'all', 'energy': ''})
-
-    # Embedding ausgeben
-    print(embedding)
-
-
 

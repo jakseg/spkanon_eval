@@ -1,0 +1,60 @@
+datasets_cfg: spkanon_eval/config/datasets/librispeech.yaml
+seed: 0
+log_dir: logs/aa_debug_spkembs
+device: cpu # overwritten on runtime
+
+inference:
+  run: false # store anonymized utterances; can be true, false or a path to an exp folder
+  consistent_targets: false
+  gender_conversion: null
+  input: # input of the `infer` method of the anonymizer
+    spectrogram: spectrogram # key under which the spectrogram can be found
+    target: target
+
+
+target_selection_cfg: spkanon_eval/config/components/target_selection/random.yaml
+
+eval: # calls func `eval_dir` of each component, passing exp_folder and config
+  config:
+    seed: 300
+    baseline: true # non-anonymized speech is evaluated; inference and train must be false, eval must be present
+    exp_folder: null # if not null, this folder is evaluated instead of current exp_folder
+    sample_rate: ${synthesis.sample_rate} # SR of the anonymized data
+    asv_reduce_dims: null
+    asv_spkid_cfg: spkanon_eval/config/components/spkid/ecapa.yaml
+    spkid_emb_model_ckpt: null
+    spkid_train: false
+
+  components:
+    asv_ignorant_cfg: spkanon_eval/config/components/asv/cos/ignorant.yaml
+
+featex:
+  spectrogram:
+    cls: spkanon_eval.featex.spectrogram.SpecExtractor
+    n_mels: 80
+    n_fft: 2048
+    win_length: 1200
+    hop_length: 300
+
+featproc:
+  dummy:
+    cls: spkanon_eval.featproc.dummy.DummyConverter
+    input:
+      spectrogram: spectrogram
+      n_frames: n_frames
+      source: source
+      target: target
+    n_targets: 10
+  output:
+    featex: []
+    featproc:
+      - spectrogram
+      - n_frames
+      - target
+
+synthesis:
+  cls: spkanon_eval.synthesis.dummy.DummySynthesizer
+  sample_rate: "${sample_rate}"
+  input:
+    spectrogram: spectrogram
+    n_frames: n_frames

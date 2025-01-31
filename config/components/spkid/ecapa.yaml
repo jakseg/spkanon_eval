@@ -1,8 +1,23 @@
+# spkid:
+#   cls: spkanon_eval.featex.SpkId # cls that extracts this feature
+#   path: speechbrain/spkrec-ecapa-voxceleb # path to ckpt or name of pretrained model
+#   emb_model_ckpt: ${eval.config.spkid_emb_model_ckpt} # path to ckpt of embedding model
+#   train: ${eval.config.spkid_train}
+#   batch_size: 32
+#   num_workers: ${data.config.num_workers}
+#   train_config: spkanon_eval/config/components/spkid/train_ecapa.yaml
+
+
 spkid:
-  cls: spkanon_eval.featex.SpkId # cls that extracts this feature
-  path: speechbrain/spkrec-ecapa-voxceleb # path to ckpt or name of pretrained model
-  emb_model_ckpt: ${eval.config.spkid_emb_model_ckpt} # path to ckpt of embedding model
-  train: ${eval.config.spkid_train}
+  cls: spkanon_eval.featex.ProsodyEmbedding
+  pitch_floor: 50  #75
+  pitch_ceiling: 600 #500
+  window_length: 0.03
+  sampling_frequency: 16000
+  time_step: 0.01
+  minimum_intensity: 60 #50
   batch_size: 32
+  feature_segments:
+    f0: "first"      # Mögliche Werte: "all", "first", "last" oder Liste von Indizes
+    energy: "last" 
   num_workers: ${data.config.num_workers}
-  train_config: spkanon_eval/config/components/spkid/train_ecapa.yaml

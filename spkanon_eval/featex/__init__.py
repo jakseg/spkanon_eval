@@ -8,3 +8,4 @@ from .spkid.spkid import SpkId  # noqa
 from .spkid.spkid_concat import SpkIdConcat  # noqa
 from .wavlm.wrapper import WavlmWrapper  # noqa
 from .spectrogram import SpecExtractor  # noqa
+from .spkid.prosody_embedding import ProsodyEmbedding # noqa  

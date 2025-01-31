@@ -4,3 +4,4 @@ asv_ignorant:
   scenario: ignorant
   spkid: ${eval.config.spkid}
   train: false
+  inference: ${inference}
