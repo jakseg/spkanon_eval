@@ -18,6 +18,6 @@ spkid:
   minimum_intensity: 60 #50
   batch_size: 32
   feature_segments:
-    f0: "first"      # Mögliche Werte: "all", "first", "last" oder Liste von Indizes
+    f0: ""      # Mögliche Werte: "all", "first", "last" oder Liste von Indizes
     energy: "last" 
   num_workers: ${data.config.num_workers}

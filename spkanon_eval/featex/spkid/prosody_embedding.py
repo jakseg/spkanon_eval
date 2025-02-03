@@ -85,6 +85,9 @@ class ProsodyEmbedding(InferComponent):
         print(f"output: {embeddings_tensor}")
         return embeddings_tensor
 
+
+
+    #Vllt das globale Segment als ersts einfügen
     def segment_audio(self, audio):
         #Global Relative Time Intervals Approach
         # Gesamtlänge berechnen
@@ -123,7 +126,8 @@ class ProsodyEmbedding(InferComponent):
         LOGGER.debug(f"Using pitch boundaries: {pitch_floor}-{pitch_ceiling}")
 
         sound = parselmouth.Sound(segment, sampling_frequency=self.sampling_frequency)
-        pitch = sound.to_pitch(pitch_floor=pitch_floor, pitch_ceiling=pitch_ceiling, time_step=self.time_step)
+        pitch = sound.to_pitch_ac(pitch_floor=pitch_floor, pitch_ceiling=pitch_ceiling, time_step=self.time_step, max_number_of_candidates=4, silence_threshold=0.05, 
+                                  octave_cost=0.01, very_accurate=True, voicing_threshold=0.45)
         pitch_values = pitch.selected_array['frequency']
 
         return pitch_values
@@ -152,8 +156,9 @@ class ProsodyEmbedding(InferComponent):
 
     def extract_energy(self, segment):
         sound = parselmouth.Sound(segment)
-        intensity = sound.to_intensity(time_step=self.time_step, subtract_mean=False) #minimum_pitch=100.0,
+        intensity = sound.to_intensity(minimum_pitch=self.pitch_floor, subtract_mean=True, time_step = self.time_step) #minimum_pitch=100.0, time_step=self.time_step, 
         intensity_values = intensity.values[0]
+        #rms = sound.get_root_mean_square()
         #linear_energy = 10 ** (intensity_values / 10)
         #return intensity_values
         return intensity_values
@@ -246,6 +251,7 @@ class ProsodyEmbedding(InferComponent):
                     np.min(valid_values),
                     np.std(valid_values),
                     np.mean(valid_values),
+
                     ]
 
 
