@@ -1,3 +1,7 @@
+# General information:
+# possible values for f0 and energy: "all", "first" or "last"
+# possible values for segmentation_method: "pitch" or "relative"
+
 # Config 1 
 # Relative segmentation - my result: 0.33999999999999997
 spkid:
@@ -8,9 +12,9 @@ spkid:
   sampling_frequency: 16000
   time_step: 0.01
   batch_size: 32
-  segmentation_method: "relative" # possible values: "pitch" or "relative"
+  segmentation_method: "relative" 
   feature_segments:
-    f0: "first"      # possible values: "all", "first" or "last"
+    f0: "first"      
     energy: "first" 
   num_workers: ${data.config.num_workers}
 
@@ -26,9 +30,9 @@ spkid:
 #   sampling_frequency: 16000
 #   time_step: 0.01
 #   batch_size: 32
-#   segmentation_method: "relative" # "pitch" or "relative"
+#   segmentation_method: "relative" 
 #   feature_segments:
-#     f0: "last"      # possible values: "all", "first" or "last"
+#     f0: "last"      
 #     energy: "last" 
 #   num_workers: ${data.config.num_workers}
 
@@ -44,9 +48,9 @@ spkid:
 #   sampling_frequency: 16000
 #   time_step: 0.01
 #   batch_size: 32
-#   segmentation_method: "relative" # "pitch" or "relative"
+#   segmentation_method: "relative" 
 #   feature_segments:
-#     f0: "all"      # possible values: "all", "first" or "last"
+#     f0: "all"      
 #     energy: "all" 
 #   num_workers: ${data.config.num_workers}
 
@@ -55,15 +59,15 @@ spkid:
 # Segmentation based on f0 - my result: 0.1923076923076923
 # spkid:
 #   cls: spkanon_eval.featex.ProsodyEmbedding
-#   pitch_floor: 50  #75
+#   pitch_floor: 50  
 #   pitch_floor_for_segmentation: 75
-#   pitch_ceiling: 600 #500
+#   pitch_ceiling: 600 
 #   sampling_frequency: 16000
 #   time_step: 0.01
 #   batch_size: 32
-#   segmentation_method: "pitch" # "pitch" or "relative"
+#   segmentation_method: "pitch" 
 #   feature_segments:
-#     f0: ""      # possible values: "all", "first" or "last"
+#     f0: ""      
 #     energy: "" 
 #   num_workers: ${data.config.num_workers}
 
@@ -77,9 +81,9 @@ spkid:
 #   sampling_frequency: 16000
 #   time_step: 0.01
 #   batch_size: 32
-#   segmentation_method: "pitch" # "pitch" or "relative"
+#   segmentation_method: "pitch" 
 #   feature_segments:
-#     f0: ""      # possible values: "all", "first" or "last"
+#     f0: ""      
 #     energy: "" 
 #   num_workers: ${data.config.num_workers}
 
@@ -95,8 +99,8 @@ spkid:
 #   sampling_frequency: 16000
 #   time_step: 0.01
 #   batch_size: 32
-#   segmentation_method: "pitch" # "pitch" or "relative"
+#   segmentation_method: "pitch" 
 #   feature_segments:
-#     f0: ""      # possible values: "all", "first" or "last"
+#     f0: ""     
 #     energy: "" 
 #   num_workers: ${data.config.num_workers}

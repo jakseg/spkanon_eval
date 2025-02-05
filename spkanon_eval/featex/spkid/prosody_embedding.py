@@ -55,7 +55,7 @@ class ProsodyEmbedding(InferComponent):
 
             
         embeddings_tensor = torch.tensor(embeddings, dtype=torch.float32).to(batch[0].device)
-        print(f"output shape: {embeddings_tensor.shape}")
+        #print(f"output shape: {embeddings_tensor.shape}")
         #print(f"output: {embeddings_tensor}")
         return embeddings_tensor
 
