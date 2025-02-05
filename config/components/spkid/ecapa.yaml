@@ -1,23 +1,102 @@
-# spkid:
-#   cls: spkanon_eval.featex.SpkId # cls that extracts this feature
-#   path: speechbrain/spkrec-ecapa-voxceleb # path to ckpt or name of pretrained model
-#   emb_model_ckpt: ${eval.config.spkid_emb_model_ckpt} # path to ckpt of embedding model
-#   train: ${eval.config.spkid_train}
-#   batch_size: 32
-#   num_workers: ${data.config.num_workers}
-#   train_config: spkanon_eval/config/components/spkid/train_ecapa.yaml
-
-
+# Config 1 
+# Relative segmentation - my result: 0.33999999999999997
 spkid:
   cls: spkanon_eval.featex.ProsodyEmbedding
-  pitch_floor: 50  #75
-  pitch_ceiling: 600 #500
-  window_length: 0.03
+  pitch_floor: 50  
+  pitch_floor_for_segmentation: 75
+  pitch_ceiling: 600
   sampling_frequency: 16000
   time_step: 0.01
-  minimum_intensity: 60 #50
   batch_size: 32
+  segmentation_method: "relative" # possible values: "pitch" or "relative"
   feature_segments:
-    f0: ""      # Mögliche Werte: "all", "first", "last" oder Liste von Indizes
-    energy: "last" 
+    f0: "first"      # possible values: "all", "first" or "last"
+    energy: "first" 
   num_workers: ${data.config.num_workers}
+
+
+
+# Config 2 
+# Relative segmentation- my result: 0.42923076923076925
+# spkid:
+#   cls: spkanon_eval.featex.ProsodyEmbedding
+#   pitch_floor: 50  
+#   pitch_floor_for_segmentation: 75
+#   pitch_ceiling: 600 
+#   sampling_frequency: 16000
+#   time_step: 0.01
+#   batch_size: 32
+#   segmentation_method: "relative" # "pitch" or "relative"
+#   feature_segments:
+#     f0: "last"      # possible values: "all", "first" or "last"
+#     energy: "last" 
+#   num_workers: ${data.config.num_workers}
+
+
+
+# Config 3 
+# Relative segmentation - my result: 0.36769230769230765
+# spkid:
+#   cls: spkanon_eval.featex.ProsodyEmbedding
+#   pitch_floor: 50  
+#   pitch_floor_for_segmentation: 75
+#   pitch_ceiling: 600 
+#   sampling_frequency: 16000
+#   time_step: 0.01
+#   batch_size: 32
+#   segmentation_method: "relative" # "pitch" or "relative"
+#   feature_segments:
+#     f0: "all"      # possible values: "all", "first" or "last"
+#     energy: "all" 
+#   num_workers: ${data.config.num_workers}
+
+
+# Config 4 
+# Segmentation based on f0 - my result: 0.1923076923076923
+# spkid:
+#   cls: spkanon_eval.featex.ProsodyEmbedding
+#   pitch_floor: 50  #75
+#   pitch_floor_for_segmentation: 75
+#   pitch_ceiling: 600 #500
+#   sampling_frequency: 16000
+#   time_step: 0.01
+#   batch_size: 32
+#   segmentation_method: "pitch" # "pitch" or "relative"
+#   feature_segments:
+#     f0: ""      # possible values: "all", "first" or "last"
+#     energy: "" 
+#   num_workers: ${data.config.num_workers}
+
+# Config 5 
+# Segmentation based on f0 - my result: 0.19538461538461538
+# spkid:
+#   cls: spkanon_eval.featex.ProsodyEmbedding
+#   pitch_floor: 75
+#   pitch_floor_for_segmentation: 50
+#   pitch_ceiling: 700
+#   sampling_frequency: 16000
+#   time_step: 0.01
+#   batch_size: 32
+#   segmentation_method: "pitch" # "pitch" or "relative"
+#   feature_segments:
+#     f0: ""      # possible values: "all", "first" or "last"
+#     energy: "" 
+#   num_workers: ${data.config.num_workers}
+
+
+
+# Config 6
+# Segmentation based on f0 - my result: 0.15384615384615385
+# spkid:
+#   cls: spkanon_eval.featex.ProsodyEmbedding
+#   pitch_floor: 75
+#   pitch_floor_for_segmentation: 75
+#   pitch_ceiling: 700
+#   sampling_frequency: 16000
+#   time_step: 0.01
+#   batch_size: 32
+#   segmentation_method: "pitch" # "pitch" or "relative"
+#   feature_segments:
+#     f0: ""      # possible values: "all", "first" or "last"
+#     energy: "" 
+#   num_workers: ${data.config.num_workers}
