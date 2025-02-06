@@ -3,7 +3,7 @@
 # possible values for segmentation_method: "pitch" or "relative"
 
 # Config 1 
-# Relative segmentation - my result: 0.33999999999999997
+# Relative segmentation - my result: original data - 0.4048076923076923 - anonymized data - 0.5128205128205128
 spkid:
   cls: spkanon_eval.featex.ProsodyEmbedding
   pitch_floor: 50  
@@ -21,7 +21,7 @@ spkid:
 
 
 # Config 2 
-# Relative segmentation- my result: 0.42923076923076925
+# Relative segmentation- my result: original data - 0.4211538461538462 anonymized data - 0.475
 # spkid:
 #   cls: spkanon_eval.featex.ProsodyEmbedding
 #   pitch_floor: 50  
@@ -39,7 +39,7 @@ spkid:
 
 
 # Config 3 
-# Relative segmentation - my result: 0.36769230769230765
+# Relative segmentation - my result: original data - 0.3961538461538462 anonymized data - 0.4996794871794872
 # spkid:
 #   cls: spkanon_eval.featex.ProsodyEmbedding
 #   pitch_floor: 50  
@@ -56,7 +56,7 @@ spkid:
 
 
 # Config 4 
-# Segmentation based on f0 - my result: 0.1923076923076923
+# Segmentation based on f0 - my result: original data - 0.22115384615384615 anonymized data - 0.444551282051282
 # spkid:
 #   cls: spkanon_eval.featex.ProsodyEmbedding
 #   pitch_floor: 50  
@@ -72,7 +72,7 @@ spkid:
 #   num_workers: ${data.config.num_workers}
 
 # Config 5 
-# Segmentation based on f0 - my result: 0.19538461538461538
+# Segmentation based on f0 - my result: original data - 0.20608974358974358 anonymized data - 0.46474358974358976
 # spkid:
 #   cls: spkanon_eval.featex.ProsodyEmbedding
 #   pitch_floor: 75
@@ -90,7 +90,7 @@ spkid:
 
 
 # Config 6
-# Segmentation based on f0 - my result: 0.15384615384615385
+# Segmentation based on f0 - my result: original data - 0.20288461538461536 anonymized data - 0.4705128205128205
 # spkid:
 #   cls: spkanon_eval.featex.ProsodyEmbedding
 #   pitch_floor: 75
